@@ -1,0 +1,124 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --font-mono: 'Courier New', monospace;
+  }
+  
+  * {
+    @apply border-brown-900;
+  }
+  
+  body {
+    @apply bg-cream-500 text-brown-900 font-mono;
+    background-image: 
+      repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(139, 111, 83, 0.03) 2px,
+        rgba(139, 111, 83, 0.03) 4px
+      );
+  }
+  
+  ::selection {
+    @apply bg-rust-500 text-cream-50;
+  }
+}
+
+@layer components {
+  /* Pixel Button Style */
+  .btn-pixel {
+    @apply px-6 py-3 font-mono font-bold uppercase tracking-wide;
+    @apply border-4 border-brown-900 bg-rust-500 text-cream-50;
+    @apply shadow-pixel transition-all duration-150;
+    @apply hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-pixel-sm;
+    @apply active:translate-x-[4px] active:translate-y-[4px] active:shadow-none;
+  }
+  
+  .btn-pixel-secondary {
+    @apply px-6 py-3 font-mono font-bold uppercase tracking-wide;
+    @apply border-4 border-brown-900 bg-cream-100 text-brown-900;
+    @apply shadow-pixel transition-all duration-150;
+    @apply hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-pixel-sm;
+    @apply active:translate-x-[4px] active:translate-y-[4px] active:shadow-none;
+  }
+  
+  /* Pixel Card Style */
+  .card-pixel {
+    @apply border-4 border-brown-900 bg-cream-100 p-6;
+    @apply shadow-pixel;
+  }
+  
+  .card-pixel-hover {
+    @apply border-4 border-brown-900 bg-cream-100 p-6;
+    @apply shadow-pixel transition-all duration-150;
+    @apply hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-pixel-sm;
+  }
+  
+  /* Input Style */
+  .input-pixel {
+    @apply w-full px-4 py-3 font-mono;
+    @apply border-4 border-brown-900 bg-cream-50;
+    @apply focus:outline-none focus:bg-white;
+    @apply placeholder:text-brown-400;
+  }
+  
+  /* Badge Style */
+  .badge-pixel {
+    @apply inline-block px-3 py-1 text-xs font-bold uppercase;
+    @apply border-2 border-brown-900;
+  }
+  
+  .badge-rust {
+    @apply badge-pixel bg-rust-500 text-cream-50;
+  }
+  
+  .badge-forest {
+    @apply badge-pixel bg-forest-500 text-cream-50;
+  }
+  
+  .badge-brown {
+    @apply badge-pixel bg-brown-500 text-cream-50;
+  }
+  
+  /* Stat Display */
+  .stat-box {
+    @apply card-pixel text-center;
+  }
+  
+  .stat-label {
+    @apply text-xs uppercase tracking-wider text-brown-600 mb-1;
+  }
+  
+  .stat-value {
+    @apply text-3xl font-bold text-brown-900;
+  }
+  
+  /* Icon Boxes (like in uPNG) */
+  .icon-box {
+    @apply w-20 h-20 border-4 border-brown-900 bg-cream-100;
+    @apply flex items-center justify-center;
+    @apply shadow-pixel-sm;
+  }
+  
+  /* Divider */
+  .divider-pixel {
+    @apply h-1 bg-brown-900 my-8;
+  }
+}
+
+@layer utilities {
+  .text-shadow-pixel {
+    text-shadow: 2px 2px 0px rgba(0, 0, 0, 0.3);
+  }
+  
+  .grid-paper {
+    background-image: 
+      linear-gradient(rgba(139, 111, 83, 0.1) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(139, 111, 83, 0.1) 1px, transparent 1px);
+    background-size: 20px 20px;
+  }
+}
