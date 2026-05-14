@@ -33,7 +33,7 @@ export default function HomePage() {
           </h1>
 
           <p className="text-center text-lg sm:text-xl text-brown-700 max-w-2xl mx-auto mb-8 leading-relaxed">
-            Every Ethereum transaction creates a gas receipt. Stake to multiply your refund. 
+            Every transaction creates a gas receipt. Stake to multiply your refund. 
             Oil goes up = your refund goes up. <strong>No IPFS. Fully on-chain.</strong>
           </p>
 
@@ -218,7 +218,7 @@ export default function HomePage() {
           </h2>
           <p className="text-lg text-brown-700 mb-8 leading-relaxed">
             Smart contracts audited by experts. No IPFS, no servers. 
-            All state lives on-chain on Ethereum.
+            All state lives on-chain on HyperEVM.
           </p>
           <div className="flex flex-wrap justify-center gap-4">
             <span className="badge-forest text-base px-6 py-2">OpenZeppelin</span>
