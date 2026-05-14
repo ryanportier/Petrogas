@@ -46,7 +46,7 @@ export function LiveStats({ tokenAddress, showTokenMetrics = false }: LiveStatsP
           {/* ETH Price */}
           <div className="stat-box group hover:translate-x-[2px] hover:translate-y-[2px] transition-transform">
             <div className="flex items-center justify-between mb-2">
-              <div className="stat-label">ETH Price</div>
+              <div className="stat-label">Hyper Price</div>
               <Fuel className="w-4 h-4 text-forest-600" />
             </div>
             {ethLoading ? (

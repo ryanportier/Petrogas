@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const ANKR_API_KEY = process.env.NEXT_PUBLIC_ANKR_API_KEY || '';
-const ANKR_ENDPOINT = 'https://rpc.ankr.com/eth';
+const ANKR_ENDPOINT = 'https://rpc.ankr.com/multichain';
 
 export interface AnkrGasPrice {
   gasPrice: string; // in wei
@@ -102,6 +102,41 @@ export async function getEthPrice(): Promise<number> {
     console.error('Error fetching ETH price:', error);
     // Fallback price
     return 3000;
+  }
+}
+
+/**
+ * Get HYPE price in USD from HypeEVM
+ */
+export async function getHypePrice(): Promise<number> {
+  try {
+    // Primero intentamos con CoinGecko para HYPE
+    const response = await axios.get(
+      'https://api.coingecko.com/api/v3/simple/price?ids=hyperliquid&vs_currencies=usd'
+    );
+    
+    return response.data.hyperliquid.usd;
+  } catch (error) {
+    console.error('Error fetching HYPE price from CoinGecko:', error);
+    
+    // Fallback a DexScreener - necesitarás reemplazar con la dirección correcta del token HYPE
+    try {
+      // Reemplaza 'HYPE_TOKEN_ADDRESS' con la dirección real del contrato de HYPE en HypeEVM
+      const HYPE_TOKEN_ADDRESS = '0x...' // <- COLOCA AQUÍ LA DIRECCIÓN DEL TOKEN HYPE
+      
+      const dexResponse = await axios.get(
+        `https://api.dexscreener.com/latest/dex/tokens/${HYPE_TOKEN_ADDRESS}`
+      );
+      
+      if (dexResponse.data.pairs && dexResponse.data.pairs.length > 0) {
+        return parseFloat(dexResponse.data.pairs[0].priceUsd);
+      }
+    } catch (dexError) {
+      console.error('Error fetching HYPE price from DexScreener:', dexError);
+    }
+    
+    // Fallback price si todo falla
+    return 0;
   }
 }
 
