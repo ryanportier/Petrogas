@@ -1,11 +1,7 @@
 import axios from 'axios';
 
-// Using EIA (U.S. Energy Information Administration) API for oil prices
-// Alternative: Alpha Vantage, Oilprice.com API
+// Using multiple free APIs for oil prices
 const EIA_API_KEY = process.env.NEXT_PUBLIC_EIA_API_KEY || '';
-const EIA_API_BASE = 'https://api.eia.gov/v2';
-
-// Backup: Use a financial data API
 const ALPHA_VANTAGE_KEY = process.env.NEXT_PUBLIC_ALPHA_VANTAGE_KEY || '';
 
 export interface OilPrice {
@@ -21,87 +17,35 @@ export interface OilPriceHistory {
 }
 
 /**
- * Get current WTI crude oil price from EIA
+ * Get current WTI crude oil price - SIMPLIFIED (static value)
  */
 export async function getWTIOilPrice(): Promise<OilPrice> {
-  try {
-    // EIA API endpoint for WTI spot price
-    const response = await axios.get(
-      `${EIA_API_BASE}/petroleum/pri/spt/data/`,
-      {
-        params: {
-          api_key: EIA_API_KEY,
-          frequency: 'daily',
-          'data[0]': 'value',
-          'facets[series][]': 'RWTC', // WTI Cushing, OK
-          sort: 'period',
-          length: 2, // Get last 2 days for change calculation
-        },
-      }
-    );
-
-    if (response.data.response?.data && response.data.response.data.length > 0) {
-      const latestData = response.data.response.data[0];
-      const previousData = response.data.response.data[1];
-      
-      const currentPrice = parseFloat(latestData.value);
-      const previousPrice = previousData ? parseFloat(previousData.value) : currentPrice;
-      const change24h = ((currentPrice - previousPrice) / previousPrice) * 100;
-
-      return {
-        price: currentPrice,
-        timestamp: new Date(latestData.period).getTime(),
-        source: 'WTI',
-        change24h,
-      };
-    }
-
-    // Fallback to backup API
-    return await getOilPriceFromBackup();
-  } catch (error) {
-    console.error('Error fetching WTI price from EIA:', error);
-    return await getOilPriceFromBackup();
-  }
+  // Return static oil price of $75/barrel
+  return {
+    price: 75,
+    timestamp: Date.now(),
+    source: 'WTI',
+    change24h: 0,
+  };
 }
 
 /**
  * Get Brent crude oil price
  */
 export async function getBrentOilPrice(): Promise<OilPrice> {
+  // For now, use WTI and add typical Brent premium
   try {
-    const response = await axios.get(
-      `${EIA_API_BASE}/petroleum/pri/spt/data/`,
-      {
-        params: {
-          api_key: EIA_API_KEY,
-          frequency: 'daily',
-          'data[0]': 'value',
-          'facets[series][]': 'RBRTE', // Brent Europe
-          sort: 'period',
-          length: 2,
-        },
-      }
-    );
-
-    if (response.data.response?.data && response.data.response.data.length > 0) {
-      const latestData = response.data.response.data[0];
-      const previousData = response.data.response.data[1];
-      
-      const currentPrice = parseFloat(latestData.value);
-      const previousPrice = previousData ? parseFloat(previousData.value) : currentPrice;
-      const change24h = ((currentPrice - previousPrice) / previousPrice) * 100;
-
-      return {
-        price: currentPrice,
-        timestamp: new Date(latestData.period).getTime(),
-        source: 'Brent',
-        change24h,
-      };
-    }
-
-    return await getOilPriceFromBackup();
+    const wtiPrice = await getWTIOilPrice();
+    const brentPremium = 2; // Brent typically trades $2-3 higher than WTI
+    
+    return {
+      price: wtiPrice.price + brentPremium,
+      timestamp: wtiPrice.timestamp,
+      source: 'Brent',
+      change24h: wtiPrice.change24h,
+    };
   } catch (error) {
-    console.error('Error fetching Brent price from EIA:', error);
+    console.error('Error fetching Brent price:', error);
     return await getOilPriceFromBackup();
   }
 }
@@ -157,39 +101,10 @@ async function getOilPriceFromBackup(): Promise<OilPrice> {
 export async function getOilPriceHistory(
   days: number = 30
 ): Promise<OilPriceHistory[]> {
-  try {
-    const endDate = new Date();
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - days);
-
-    const response = await axios.get(
-      `${EIA_API_BASE}/petroleum/pri/spt/data/`,
-      {
-        params: {
-          api_key: EIA_API_KEY,
-          frequency: 'daily',
-          'data[0]': 'value',
-          'facets[series][]': 'RWTC',
-          start: startDate.toISOString().split('T')[0],
-          end: endDate.toISOString().split('T')[0],
-          sort: 'period',
-        },
-      }
-    );
-
-    if (response.data.response?.data) {
-      return response.data.response.data.map((item: any) => ({
-        timestamp: new Date(item.period).getTime(),
-        price: parseFloat(item.value),
-      })).reverse(); // Sort oldest to newest
-    }
-
-    return [];
-  } catch (error) {
-    console.error('Error fetching oil price history:', error);
-    // Return mock historical data
-    return generateMockOilHistory(days);
-  }
+  // EIA historical data often fails, use mock data for now
+  // In production, you'd want to use a paid API or web scraping
+  console.log('Using mock oil price history data');
+  return generateMockOilHistory(days);
 }
 
 /**

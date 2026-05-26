@@ -5,6 +5,7 @@ import { LiveStats } from '@/components/LiveStats';
 import { RewardVarianceChart, OilPriceChart } from '@/components/RewardCharts';
 import { useRefundCalculator } from '@/hooks/useRealTimeData';
 import { formatUSD, formatNumber, formatPercentage } from '@/lib/utils';
+import { FormattedNumber } from '@/components/FormattedNumber';
 import { Calculator, TrendingUp, Droplet, Zap, Info, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 
@@ -68,7 +69,7 @@ export default function DashboardPage() {
                       Gas Used (units)
                     </label>
                     <span className="text-sm font-mono text-brown-700">
-                      {gasUsed.toLocaleString()}
+                      <FormattedNumber value={gasUsed} />
                     </span>
                   </div>
                   <input

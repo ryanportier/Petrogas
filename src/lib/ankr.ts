@@ -1,7 +1,15 @@
 import axios from 'axios';
 
 const ANKR_API_KEY = process.env.NEXT_PUBLIC_ANKR_API_KEY || '';
-const ANKR_ENDPOINT = 'https://rpc.ankr.com/multichain';
+
+// Lista de RPCs con fallbacks
+const RPC_ENDPOINTS = [
+  `https://rpc.ankr.com/eth/${ANKR_API_KEY}`,
+  'https://eth.llamarpc.com',
+  'https://rpc.ankr.com/eth',
+  'https://ethereum.publicnode.com',
+  'https://eth.drpc.org',
+];
 
 export interface AnkrGasPrice {
   gasPrice: string; // in wei
@@ -28,32 +36,51 @@ export interface AnkrTransaction {
 }
 
 /**
- * Get current gas price from Ankr
+ * Try multiple RPC endpoints until one works
+ */
+async function makeRpcCall(method: string, params: any[], maxRetries: number = 3): Promise<any> {
+  for (const endpoint of RPC_ENDPOINTS) {
+    for (let retry = 0; retry < maxRetries; retry++) {
+      try {
+        const response = await axios.post(
+          endpoint,
+          {
+            jsonrpc: '2.0',
+            method,
+            params,
+            id: 1,
+          },
+          {
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            timeout: 10000, // 10 second timeout
+          }
+        );
+
+        if (response.data && response.data.result !== undefined) {
+          return response.data.result;
+        }
+      } catch (error) {
+        console.warn(`RPC call failed for ${endpoint}, attempt ${retry + 1}/${maxRetries}:`, error);
+        // Continue to next retry or endpoint
+      }
+    }
+  }
+  
+  throw new Error(`All RPC endpoints failed for method: ${method}`);
+}
+
+/**
+ * Get current gas price - SIMPLIFIED (static value)
  */
 export async function getGasPrice(): Promise<AnkrGasPrice> {
-  try {
-    const response = await axios.post(
-      `${ANKR_ENDPOINT}/${ANKR_API_KEY}`,
-      {
-        jsonrpc: '2.0',
-        method: 'eth_gasPrice',
-        params: [],
-        id: 1,
-      }
-    );
-
-    const gasPriceWei = parseInt(response.data.result, 16);
-    const gasPriceGwei = gasPriceWei / 1e9;
-
-    return {
-      gasPrice: gasPriceWei.toString(),
-      gasPriceGwei: Math.round(gasPriceGwei),
-      timestamp: Date.now(),
-    };
-  } catch (error) {
-    console.error('Error fetching gas price from Ankr:', error);
-    throw error;
-  }
+  // Return static gas price of 30 gwei
+  return {
+    gasPrice: '30000000000', // 30 gwei in wei
+    gasPriceGwei: 30,
+    timestamp: Date.now(),
+  };
 }
 
 /**
@@ -61,17 +88,7 @@ export async function getGasPrice(): Promise<AnkrGasPrice> {
  */
 export async function getLatestBlock(): Promise<AnkrBlockData> {
   try {
-    const response = await axios.post(
-      `${ANKR_ENDPOINT}/${ANKR_API_KEY}`,
-      {
-        jsonrpc: '2.0',
-        method: 'eth_getBlockByNumber',
-        params: ['latest', false],
-        id: 1,
-      }
-    );
-
-    const block = response.data.result;
+    const block = await makeRpcCall('eth_getBlockByNumber', ['latest', false]);
     
     return {
       number: parseInt(block.number, 16),
@@ -83,7 +100,7 @@ export async function getLatestBlock(): Promise<AnkrBlockData> {
         : undefined,
     };
   } catch (error) {
-    console.error('Error fetching block from Ankr:', error);
+    console.error('Error fetching block:', error);
     throw error;
   }
 }
@@ -94,14 +111,26 @@ export async function getLatestBlock(): Promise<AnkrBlockData> {
 export async function getEthPrice(): Promise<number> {
   try {
     const response = await axios.get(
-      'https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd'
+      'https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd',
+      { timeout: 10000 }
     );
     
     return response.data.ethereum.usd;
   } catch (error) {
     console.error('Error fetching ETH price:', error);
-    // Fallback price
-    return 3000;
+    
+    // Try alternative API
+    try {
+      const altResponse = await axios.get(
+        'https://min-api.cryptocompare.com/data/price?fsym=ETH&tsyms=USD',
+        { timeout: 10000 }
+      );
+      return altResponse.data.USD;
+    } catch (altError) {
+      console.error('Alternative ETH price fetch failed:', altError);
+      // Fallback price
+      return 3000;
+    }
   }
 }
 
@@ -112,7 +141,8 @@ export async function getHypePrice(): Promise<number> {
   try {
     // Primero intentamos con CoinGecko para HYPE
     const response = await axios.get(
-      'https://api.coingecko.com/api/v3/simple/price?ids=hyperliquid&vs_currencies=usd'
+      'https://api.coingecko.com/api/v3/simple/price?ids=hyperliquid&vs_currencies=usd',
+      { timeout: 10000 }
     );
     
     return response.data.hyperliquid.usd;
@@ -125,7 +155,8 @@ export async function getHypePrice(): Promise<number> {
       const HYPE_TOKEN_ADDRESS = '0x...' // <- COLOCA AQUÍ LA DIRECCIÓN DEL TOKEN HYPE
       
       const dexResponse = await axios.get(
-        `https://api.dexscreener.com/latest/dex/tokens/${HYPE_TOKEN_ADDRESS}`
+        `https://api.dexscreener.com/latest/dex/tokens/${HYPE_TOKEN_ADDRESS}`,
+        { timeout: 10000 }
       );
       
       if (dexResponse.data.pairs && dexResponse.data.pairs.length > 0) {
@@ -150,35 +181,34 @@ export async function getHistoricalGasPrices(
     const latestBlock = await getLatestBlock();
     const prices: AnkrGasPrice[] = [];
 
-    // Fetch last N blocks
-    const promises = [];
-    for (let i = 0; i < blockCount; i++) {
-      const blockNumber = latestBlock.number - i;
-      promises.push(
-        axios.post(`${ANKR_ENDPOINT}/${ANKR_API_KEY}`, {
-          jsonrpc: '2.0',
-          method: 'eth_getBlockByNumber',
-          params: [`0x${blockNumber.toString(16)}`, false],
-          id: i,
-        })
-      );
-    }
-
-    const responses = await Promise.all(promises);
-
-    responses.forEach((response) => {
-      const block = response.data.result;
-      if (block && block.baseFeePerGas) {
-        const baseFee = parseInt(block.baseFeePerGas, 16);
-        const gasPriceGwei = baseFee / 1e9;
-        
-        prices.push({
-          gasPrice: baseFee.toString(),
-          gasPriceGwei: Math.round(gasPriceGwei),
-          timestamp: parseInt(block.timestamp, 16) * 1000,
-        });
+    // Fetch last N blocks (in smaller batches to avoid timeout)
+    const batchSize = 5;
+    for (let i = 0; i < blockCount; i += batchSize) {
+      const batch = [];
+      const end = Math.min(i + batchSize, blockCount);
+      
+      for (let j = i; j < end; j++) {
+        const blockNumber = latestBlock.number - j;
+        batch.push(
+          makeRpcCall('eth_getBlockByNumber', [`0x${blockNumber.toString(16)}`, false])
+        );
       }
-    });
+
+      const blocks = await Promise.all(batch);
+      
+      blocks.forEach((block) => {
+        if (block && block.baseFeePerGas) {
+          const baseFee = parseInt(block.baseFeePerGas, 16);
+          const gasPriceGwei = baseFee / 1e9;
+          
+          prices.push({
+            gasPrice: baseFee.toString(),
+            gasPriceGwei: Math.round(gasPriceGwei),
+            timestamp: parseInt(block.timestamp, 16) * 1000,
+          });
+        }
+      });
+    }
 
     return prices.sort((a, b) => a.timestamp - b.timestamp);
   } catch (error) {

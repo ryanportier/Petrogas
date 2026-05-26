@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getGasPrice, getAverageGasPrice, subscribeToGasPrices, AnkrGasPrice, getHypePrice } from '@/lib/ankr';
+import { getGasPrice, getAverageGasPrice, subscribeToGasPrices, AnkrGasPrice, getEthPrice } from '@/lib/ankr';
 import { getTokenMetrics, subscribeToTokenMetrics, TokenMetrics } from '@/lib/dexscreener';
 import { getWTIOilPrice, subscribeToOilPrice, OilPrice, getOilPriceHistory, OilPriceHistory } from '@/lib/oilPrice';
 import { calculateRefund, calculateOilPegFactor, calculateTimeMultiplier, calculateGweiEfficiency } from '@/lib/utils';
@@ -44,7 +44,7 @@ export function useGasPrice(updateIntervalMs: number = 12000) {
 }
 
 /**
- * Hook for real-time HYPE price
+ * Hook for real-time ETH price
  */
 export function useEthPrice(updateIntervalMs: number = 30000) {
   const [ethPrice, setEthPrice] = useState<number | null>(null);
@@ -56,7 +56,7 @@ export function useEthPrice(updateIntervalMs: number = 30000) {
 
     const fetchPrice = async () => {
       try {
-        const price = await getHypePrice();
+        const price = await getEthPrice();
         setEthPrice(price);
         setLoading(false);
       } catch (err) {
